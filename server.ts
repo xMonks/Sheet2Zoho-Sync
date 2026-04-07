@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
@@ -19,7 +18,7 @@ app.set('trust proxy', 1); // Required for secure cookies behind a proxy
 app.use(express.json());
 
 // Normalize APP_URL
-const APP_URL = (process.env.APP_URL || '').replace(/\/$/, '');
+const APP_URL = (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')).replace(/\/$/, '');
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'default-secret',
@@ -211,6 +210,22 @@ app.get('/auth/zoho/callback', async (req, res) => {
     console.error('Zoho Auth Error:', error);
     res.status(500).send('Authentication failed');
   }
+});
+
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    VERCEL: process.env.VERCEL,
+    NODE_ENV: process.env.NODE_ENV,
+    variables: {
+      GOOGLE_CLIENT_ID: { present: !!process.env.GOOGLE_CLIENT_ID, length: process.env.GOOGLE_CLIENT_ID?.length },
+      GOOGLE_CLIENT_SECRET: { present: !!process.env.GOOGLE_CLIENT_SECRET, length: process.env.GOOGLE_CLIENT_SECRET?.length },
+      ZOHO_CLIENT_ID: { present: !!process.env.ZOHO_CLIENT_ID, length: process.env.ZOHO_CLIENT_ID?.length },
+      ZOHO_CLIENT_SECRET: { present: !!process.env.ZOHO_CLIENT_SECRET, length: process.env.ZOHO_CLIENT_SECRET?.length },
+      APP_URL: { present: !!process.env.APP_URL, value: process.env.APP_URL },
+      ZOHO_REGION: { present: !!process.env.ZOHO_REGION, value: process.env.ZOHO_REGION },
+      SESSION_SECRET: { present: !!process.env.SESSION_SECRET, length: process.env.SESSION_SECRET?.length },
+    }
+  });
 });
 
 // --- API Routes ---
@@ -742,7 +757,8 @@ app.post('/api/sync-manual', async (req, res) => {
 });
 
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
