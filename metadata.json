@@ -1,0 +1,5 @@
+{
+  "name": "Sheet2Zoho Sync",
+  "description": "Sync data from Google Sheets to Zoho CRM automatically.",
+  "requestFramePermissions": []
+}
