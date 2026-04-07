@@ -506,7 +506,7 @@ export default function App() {
             <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5" />
             <div>
               <h3 className="font-bold text-amber-800">Configuration Required</h3>
-              <p className="text-sm text-amber-700 mb-3">Some environment variables are missing in the AI Studio Secrets panel.</p>
+              <p className="text-sm text-amber-700 mb-3">Some environment variables are missing in your deployment settings (Vercel or AI Studio).</p>
               <div className="flex flex-wrap gap-3">
                 <ConfigBadge label="Google Client" active={status.config.google} />
                 <ConfigBadge label="Zoho Client" active={status.config.zoho} />

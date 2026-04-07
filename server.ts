@@ -215,13 +215,23 @@ app.get('/auth/zoho/callback', async (req, res) => {
 
 // --- API Routes ---
 app.get('/api/status', (req, res) => {
-  res.json({
-    config: {
-      google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
-      zoho: !!process.env.ZOHO_CLIENT_ID && !!process.env.ZOHO_CLIENT_SECRET,
-      appUrl: !!process.env.APP_URL,
-    }
-  });
+  const config = {
+    google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    zoho: !!process.env.ZOHO_CLIENT_ID && !!process.env.ZOHO_CLIENT_SECRET,
+    appUrl: !!process.env.APP_URL,
+  };
+  
+  if (!config.google || !config.zoho || !config.appUrl) {
+    console.warn('Missing environment variables:', {
+      GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
+      ZOHO_CLIENT_ID: !!process.env.ZOHO_CLIENT_ID,
+      ZOHO_CLIENT_SECRET: !!process.env.ZOHO_CLIENT_SECRET,
+      APP_URL: !!process.env.APP_URL,
+    });
+  }
+
+  res.json({ config });
 });
 
 app.get('/api/sheets', async (req, res) => {
