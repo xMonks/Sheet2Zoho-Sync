@@ -311,7 +311,7 @@ app.get('/api/sheets/:spreadsheetId/data', async (req, res) => {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A1:Z100`,
+      range: `${sheetName}!A:ZZ`,
     });
     res.json(response.data.values);
   } catch (error) {
@@ -444,7 +444,7 @@ app.post('/api/sync', async (req, res) => {
     const sheetName = meta.data.sheets?.[0]?.properties?.title;
     const sheetResponse = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A1:Z100`,
+      range: `${sheetName}!A:ZZ`,
     });
     const rows = sheetResponse.data.values;
     if (!rows || rows.length < 2) return res.status(400).json({ error: 'No data found in sheet' });
