@@ -545,6 +545,74 @@ app.post('/api/sync', async (req, res) => {
   }
 });
 
+app.post('/api/sync-records', async (req, res) => {
+  const { records, updateExisting, duplicateCheckField, zohoTokens: bodyZohoTokens } = req.body;
+  const zohoTokensStr = (req.headers['x-zoho-tokens'] as string) || (bodyZohoTokens ? JSON.stringify(bodyZohoTokens) : null);
+
+  if (!zohoTokensStr) {
+    return res.status(401).json({ error: 'Not connected to Zoho' });
+  }
+
+  if (!records || !Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ error: 'No records provided for sync' });
+  }
+
+  try {
+    const zohoTokens = JSON.parse(zohoTokensStr);
+
+    // Format phone numbers
+    const zohoData = records.map((rec: any) => {
+      const record = { ...rec };
+      ['Phone', 'Mobile'].forEach((field) => {
+        if (record[field]) {
+          const digitsOnly = String(record[field]).replace(/\D/g, '');
+          record[field] = digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly;
+        }
+      });
+      return record;
+    });
+
+    const apiDomain = zohoTokens.api_domain || `https://www.zohoapis.${ZOHO_REGION}`;
+    let tokenRefreshed = false;
+    let currentZohoTokens = zohoTokens;
+    let zohoRes;
+
+    const endpoint = updateExisting ? `${apiDomain}/crm/v2/Leads/upsert` : `${apiDomain}/crm/v2/Leads`;
+    const payload = updateExisting && duplicateCheckField
+      ? { data: zohoData, duplicate_check_fields: [duplicateCheckField] }
+      : { data: zohoData };
+
+    try {
+      zohoRes = await axios.post(endpoint, payload, {
+        headers: { Authorization: `Zoho-oauthtoken ${currentZohoTokens.access_token}` }
+      });
+    } catch (e: any) {
+      if (e.response?.status === 401 || e.response?.data?.code === 'OAUTH_SCOPE_MISMATCH') {
+        const newTokens = await refreshZohoToken(currentZohoTokens);
+        if (newTokens.access_token !== currentZohoTokens.access_token) {
+          currentZohoTokens = newTokens;
+          tokenRefreshed = true;
+          zohoRes = await axios.post(endpoint, payload, {
+            headers: { Authorization: `Zoho-oauthtoken ${currentZohoTokens.access_token}` }
+          });
+        } else {
+          throw e;
+        }
+      } else {
+        throw e;
+      }
+    }
+
+    res.json({ success: true, zohoResponse: zohoRes.data, zohoTokens: tokenRefreshed ? currentZohoTokens : undefined });
+  } catch (error: any) {
+    console.error('Sync Records Error:', error.response?.data || error.message);
+    if (error.response?.status === 401 || error.response?.data?.code === 'OAUTH_SCOPE_MISMATCH') {
+      return res.status(401).json({ error: 'Zoho permissions changed. Please reconnect Zoho CRM.' });
+    }
+    res.status(500).json({ error: 'Sync failed', details: error.response?.data });
+  }
+});
+
 import fs from 'fs';
 
 let lastZohoError: any = null;
