@@ -89,7 +89,7 @@ export async function fetchFirestoreLeads(collectionName: string = "leads"): Pro
   const fieldSet = new Set<string>();
 
   // Created_Time as first column followed by core CRM fields
-  const priorityFields = ['Created_Time', 'First_Name', 'Last_Name', 'Email', 'Phone', 'Company', 'Lead_Source', 'Message', 'Source_Page', 'Status'];
+  const priorityFields = ['Created_Time', 'First_Name', 'Last_Name', 'Email', 'Phone', 'Company', 'Lead_Source', 'Lead_Status', 'Message', 'Source_Page'];
   
   snapshot.forEach((doc) => {
     const data = doc.data();
@@ -122,6 +122,8 @@ export async function fetchFirestoreLeads(collectionName: string = "leads"): Pro
       : '';
     const createdMillis = createdDate ? createdDate.getTime() : 0;
 
+    const leadStatusVal = data.Lead_Status || data.lead_status || data.leadStatus || data.status || data.Status || 'New Lead';
+
     const docObj: any = {
       Doc_ID: doc.id,
       Created_Time: createdTimeStr,
@@ -131,9 +133,10 @@ export async function fetchFirestoreLeads(collectionName: string = "leads"): Pro
       Phone: data.phone || data.Phone || data.mobile || data.Mobile || '',
       Company: data.company || data.Company || '',
       Lead_Source: data.Lead_Source || data.lead_source || data.leadSource || 'Form Submission',
+      Lead_Status: leadStatusVal,
       Message: data.message || data.Message || '',
       Source_Page: data.sourcePage || data.source_page || '',
-      Status: data.status || data.Status || 'New Lead',
+      Status: leadStatusVal,
       _createdMillis: createdMillis,
       ...data
     };
@@ -142,6 +145,8 @@ export async function fetchFirestoreLeads(collectionName: string = "leads"): Pro
     docObj['Created_Time'] = createdTimeStr;
     // Ensure Lead_Source is Form Submission if not specified
     docObj['Lead_Source'] = docObj['Lead_Source'] || 'Form Submission';
+    // Ensure Lead_Status is New Lead if not specified
+    docObj['Lead_Status'] = docObj['Lead_Status'] || 'New Lead';
 
     Object.keys(docObj).forEach(k => {
       if (typeof docObj[k] !== 'object' && k !== '_createdMillis') {
@@ -159,7 +164,8 @@ export async function fetchFirestoreLeads(collectionName: string = "leads"): Pro
   const redundantFields = new Set([
     'name', 'Name', 'email', 'phone', 'mobile', 'company',
     'leadSource', 'lead_source', 'Lead_Source',
-    'message', 'sourcePage', 'source_page', 'status', 'timestamp',
+    'status', 'Status', 'lead_status', 'Lead_Status', 'leadStatus',
+    'message', 'sourcePage', 'source_page', 'timestamp',
     'createdAt', 'created_at', 'date'
   ]);
   const remainingFields = Array.from(fieldSet).filter(

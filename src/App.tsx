@@ -368,10 +368,11 @@ export default function App() {
       localStorage.setItem('firestoreConnected', 'true');
       setFirestoreStatusMessage(`Loaded ${result.count} lead(s) from Firestore`);
 
-      // Set default fixed value Lead_Source to 'Form Submission'
+      // Set default fixed values for Firestore leads
       setFixedValues(prev => ({
         ...prev,
-        Lead_Source: prev.Lead_Source || 'Form Submission'
+        Lead_Source: prev.Lead_Source || 'Form Submission',
+        Lead_Status: prev.Lead_Status || 'New Lead'
       }));
 
       // Auto-map columns to Zoho CRM fields
@@ -443,8 +444,9 @@ export default function App() {
               if (v) record[k] = v;
             });
           }
-          // Set Lead_Source to Form Submission for Firestore leads
+          // Set Lead_Source & Lead_Status for Firestore leads
           record['Lead_Source'] = fixedValues['Lead_Source'] || 'Form Submission';
+          record['Lead_Status'] = fixedValues['Lead_Status'] || 'New Lead';
           return record;
         });
 
@@ -906,7 +908,10 @@ export default function App() {
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         >
                           <option value="">Select Status...</option>
-                          {zohoMetadata?.leadStatus.map((opt: any) => (
+                          {(!zohoMetadata?.leadStatus || !zohoMetadata.leadStatus.some((opt: any) => opt.actual_value === 'New Lead')) && (
+                            <option value="New Lead">New Lead</option>
+                          )}
+                          {zohoMetadata?.leadStatus?.map((opt: any) => (
                             <option key={opt.actual_value} value={opt.actual_value}>{opt.display_value}</option>
                           ))}
                         </select>

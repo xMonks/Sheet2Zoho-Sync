@@ -560,11 +560,14 @@ app.post('/api/sync-records', async (req, res) => {
   try {
     const zohoTokens = JSON.parse(zohoTokensStr);
 
-    // Format phone numbers and ensure Lead_Source
+    // Format phone numbers and ensure Lead_Source & Lead_Status
     const zohoData = records.map((rec: any) => {
       const record = { ...rec };
       if (!record['Lead_Source']) {
         record['Lead_Source'] = 'Form Submission';
+      }
+      if (!record['Lead_Status']) {
+        record['Lead_Status'] = 'New Lead';
       }
       ['Phone', 'Mobile'].forEach((field) => {
         if (record[field]) {
