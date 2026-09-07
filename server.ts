@@ -560,9 +560,12 @@ app.post('/api/sync-records', async (req, res) => {
   try {
     const zohoTokens = JSON.parse(zohoTokensStr);
 
-    // Format phone numbers
+    // Format phone numbers and ensure Lead_Source
     const zohoData = records.map((rec: any) => {
       const record = { ...rec };
+      if (!record['Lead_Source']) {
+        record['Lead_Source'] = 'Form Submission';
+      }
       ['Phone', 'Mobile'].forEach((field) => {
         if (record[field]) {
           const digitsOnly = String(record[field]).replace(/\D/g, '');

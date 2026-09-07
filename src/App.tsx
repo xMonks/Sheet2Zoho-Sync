@@ -368,6 +368,12 @@ export default function App() {
       localStorage.setItem('firestoreConnected', 'true');
       setFirestoreStatusMessage(`Loaded ${result.count} lead(s) from Firestore`);
 
+      // Set default fixed value Lead_Source to 'Form Submission'
+      setFixedValues(prev => ({
+        ...prev,
+        Lead_Source: prev.Lead_Source || 'Form Submission'
+      }));
+
       // Auto-map columns to Zoho CRM fields
       const newMapping = { ...mapping };
       result.headers.forEach((h: string) => {
@@ -437,6 +443,8 @@ export default function App() {
               if (v) record[k] = v;
             });
           }
+          // Set Lead_Source to Form Submission for Firestore leads
+          record['Lead_Source'] = fixedValues['Lead_Source'] || 'Form Submission';
           return record;
         });
 
@@ -922,7 +930,10 @@ export default function App() {
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         >
                           <option value="">Select Source...</option>
-                          {zohoMetadata?.leadSource.map((opt: any) => (
+                          {(!zohoMetadata?.leadSource || !zohoMetadata.leadSource.some((opt: any) => opt.actual_value === 'Form Submission')) && (
+                            <option value="Form Submission">Form Submission</option>
+                          )}
+                          {zohoMetadata?.leadSource?.map((opt: any) => (
                             <option key={opt.actual_value} value={opt.actual_value}>{opt.display_value}</option>
                           ))}
                         </select>
